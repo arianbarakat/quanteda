@@ -90,6 +90,8 @@ as.dfm.dfm <- function(x) {
     # for compatibility with older dfm objects
     if (identical(dim(x@docvars), c(0L, 0L)))
         x@docvars <- data.frame(matrix(ncol = 0, nrow = nrow(x)))
+    # dovars should not have row.names
+    rownames(x@docvars) <- NULL
     return(x)
 }
 
@@ -158,11 +160,15 @@ matrix2dfm <- function(x, slots = NULL) {
     dimnames(x) <- list(docs = rowname, features = colname)
     
     # Force dfm to have docvars
-    if (is.character(rownames(x))) {
-        x <- new("dfm", as(x, 'dgCMatrix'), docvars = data.frame(row.names = make.unique(rownames(x))))
-    } else {
-        x <- new("dfm", as(x, 'dgCMatrix'))
-    }
+    # if (is.character(rownames(x))) {
+    #     x <- new("dfm", as(x, 'dgCMatrix'), docvars = data.frame(row.names = make.unique(rownames(x))))
+    # } else {
+    #     x <- new("dfm", as(x, 'dgCMatrix'))
+    # }
+    x <- new("dfm", as(x, 'dgCMatrix'), docvars = data.frame(matrix(ncol = 0, nrow = nrow(x))))
+    docvars(x, '_document') <- rowname
+    docvars(x, '_docid') <- seq_along(rowname)
+    docvars(x, '_segid') <- rep(1, length(rowname))
     
     set_dfm_slots(x, slots)
 }

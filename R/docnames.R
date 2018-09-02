@@ -31,13 +31,7 @@ docnames.default <- function(x) {
 #' @noRd
 #' @export
 docnames.corpus <- function(x) {
-    # didn't use accessor documents() because didn't want to pass
-    # that large object
-    if (is.null(rownames(x$documents))) {
-        paste0('text', seq_len(ndoc(x)))
-    } else {
-        rownames(x$documents)
-    }
+    docvars(x, "_document")
 }
 
 #' @param value a character vector of the same length as \code{x}

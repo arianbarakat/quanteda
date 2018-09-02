@@ -44,14 +44,18 @@ test_that("+ and c() methods work for corpus and corpuszip", {
 })
 
 test_that("as.character and texts methods work for corpus and corpuszip", {
-    expect_equal(texts(data_corpuszip_test), texts(data_corpus_test))
-    expect_equal(as.character(data_corpuszip_test), as.character(data_corpus_test))
+    expect_equal(texts(data_corpuszip_test), 
+                 texts(data_corpus_test))
+    expect_equal(as.character(data_corpuszip_test), 
+                 as.character(data_corpus_test))
 })
 
 
 test_that("collocations works for corpus and corpuszip", {
-    expect_equal(textstat_collocations(data_corpuszip_test), textstat_collocations(data_corpus_test))
-    expect_equal(as.character(data_corpuszip_test), as.character(data_corpus_test))
+    expect_equal(textstat_collocations(data_corpuszip_test), 
+                 textstat_collocations(data_corpus_test))
+    expect_equal(as.character(data_corpuszip_test), 
+                 as.character(data_corpus_test))
 })
 
 test_that("corpus_reshape works for corpus and corpuszip", {

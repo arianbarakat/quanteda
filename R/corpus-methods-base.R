@@ -193,6 +193,18 @@ tail.corpus <- function(x, n = 6L, ...) {
 #'   character vectors and never as factors.
 #' @export
 `+.corpus` <- function(c1, c2) {
+    
+    compress <- FALSE
+    if (is.corpuszip(c1)) {
+        c1 <- as.corpus(c1)
+        compress <- TRUE
+    }
+    
+    if (is.corpuszip(c2)) {
+        c2 <- as.corpus(c2)
+        compress <- TRUE
+    }
+    
     ## deal with metadata first
     # note the source and date/time-stamp the creation
     metacorpus(c1, "source") <- paste("Combination of corpuses", 
@@ -207,26 +219,26 @@ tail.corpus <- function(x, n = 6L, ...) {
                 paste(metacorpus(c1, field), metacorpus(c2, field))
     }
     
-    r_names <-  make.unique(c(rownames(c1$documents), rownames(c2$documents)), sep='')
-    c1$documents <- data.table::setDF(data.table::rbindlist(list(c1$documents, c2$documents), fill = TRUE))
-    rownames(c1$documents) <- r_names
+    documents <- data.table::setDF(data.table::rbindlist(list(c1$documents, 
+                                                              c2$documents), fill = TRUE))
+    documents[["_document"]] <- make.unique(c(c1$documents[["_document"]], 
+                                              c2$documents[["_document"]]), sep = '')
     
-    #  Put rownames back in because the hadleyverse discards them
-    #rownames(c1$documents) <- make.unique(rowname, sep='')
-    
-    # settings
-    ### currently just use the c1 settings
-    
-    # special handling for docnames if item is corpuszip
-    if (is.corpuszip(c1)) {
-        x <- c(texts(c1), texts(c2))
-        x[1 : (length(x)-1)] <- 
-            paste0(x[1 : (length(x)-1)], quanteda_document_delimiter)
-        c1$texts <- memCompress(x, 'gzip')
-        c1$docnames <- rownames(c1$documents)
+    temp <- list(documents = documents,
+                 settings = settings())
+              
+    ## add some elements if compress
+    if (compress) {
+      # compute the compression %
+      temp$compression_rate <- utils::object.size(temp$texts) / 
+          utils::object.size(unname(x)) * 100
     }
-
-    return(c1)
+    
+    class(temp) <- c("corpus", class(temp))
+    if (compress) {
+      class(temp) <- c("corpuszip", class(temp))
+    }
+    return(temp)
 }
 
 

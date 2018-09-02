@@ -58,7 +58,7 @@ dfm_group.dfm <- function(x, groups = NULL, fill = FALSE) {
     if (length(dvars)) {
         x@docvars <- group_docvars(dvars, groups)
     } else {
-        x@docvars <- data.frame(row.names = docnames(x))
+        x@docvars <- data.frame(matrix(ncol = 0, nrow = ndoc(x)))
     }
     return(x)
 }
@@ -128,13 +128,11 @@ group_dfm <- function(x, features = NULL, documents = NULL, fill = FALSE) {
                   smooth = x@smooth,
                   ngrams = x@ngrams,
                   skip = x@skip,
-                  concatenator = x@concatenator)
+                  concatenator = x@concatenator,
+                  docvars = data.frame(matrix(ncol = 0, nrow = dims[1])))
     
-    if (is.null(documents)) {
+    if (is.null(documents))
         docvars(result) <- docvars(x)
-    } else {
-        docvars(result) <- data.frame(row.names = documents_name)
-    }
     return(result)
 }
 

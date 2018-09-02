@@ -21,11 +21,11 @@ as.character.corpuszip <- function(x, ...) {
 #' @noRd
 #' @export
 "texts<-.corpuszip" <- function(x, value) { 
-    temp_texts <- texts(x)
-    temp_texts <- value
-    temp_texts[1 : (length(temp_texts)-1)] <- 
-        paste0(temp_texts[1 : (length(temp_texts)-1)], quanteda_document_delimiter)
-    x$texts <- memCompress(temp_texts, 'gzip')
+    temp <- texts(x)
+    temp <- value
+    temp[seq(length(temp) - 1)] <- paste0(temp[seq(length(temp) - 1)], 
+                                          quanteda_document_delimiter)
+    x$texts <- memCompress(temp, 'gzip')
     # NOTE: this will not replace named elements in docnames
     x
 }
@@ -33,7 +33,7 @@ as.character.corpuszip <- function(x, ...) {
 #' @export
 #' @noRd
 docnames.corpuszip <- function(x) {
-    x$docnames
+    docvars(x, "_document")
 }
 
 #' @export
@@ -41,7 +41,7 @@ docnames.corpuszip <- function(x) {
 "docnames<-.corpuszip" <- function(x, value) {
     if (!is.corpus(x))
         stop("docnames<-  only valid for corpus objects.")
-    rownames(x$documents) <- x$docnames <- value
+    docvars(x, "_document") <- value
     return(x)
 }
 

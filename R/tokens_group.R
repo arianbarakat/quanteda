@@ -22,7 +22,7 @@ tokens_group <- function(x, groups = NULL) {
         names(x) <- as.character(groups[1])
     }
     x <- structure(x, class = 'tokens')
-    docvars(x) <- data.frame(row.names = docnames(x))
+    docvars(x) <- data.frame(matrix(ncol = 0, nrow = ndoc(x)))
     attributes(x, FALSE) <- attrs
     return(x)
 }

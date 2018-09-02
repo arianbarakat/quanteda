@@ -27,10 +27,9 @@ summary_character <- function(object, n = 100, tolower = FALSE, ...) {
     toks <- tokens(object, ...)
     ntokens <- ntoken(toks)
     ntypes <- ntype(toks)
-    results <- data.frame(Text = names(object),
-                          Types = ntypes,
-                          Tokens = ntokens,
-                          Sentences = nsents,
-                          row.names = NULL)
-    results
+    result <- data.frame(Text = names(object),
+                         Types = ntypes,
+                         Tokens = ntokens,
+                         Sentences = nsents)
+    return(result)
 }

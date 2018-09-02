@@ -147,10 +147,19 @@ corpus.character <- function(x, docnames = NULL,
                              compress = FALSE, ...) {
     
     unused_dots(...)
-    name <- names(x)
-    x[is.na(x)] <- ""
+    # name the texts vector
+    if (!is.null(docnames)) {
+        if (length(docnames) != length(x))
+            stop("docnames must be the samle length as documents")
+    } else if (is.null(names(x))) {
+        docnames <- paste0(quanteda_options("base_docname"), seq_along(x))
+    } else {
+        docnames <- names(x)
+    }
+    docnames <- make.unique(docnames)
     
     # convert the dreaded "curly quotes" to ASCII equivalents
+    x[is.na(x)] <- ""    
     x <- stri_replace_all_fixed(x,
                                 c("\u201C", "\u201D", "\u201F",
                                   "\u2018", "\u201B", "\u2019"),
@@ -164,20 +173,6 @@ corpus.character <- function(x, docnames = NULL,
     x <- stri_replace_all_fixed(x, "\r\n", "\n") # Windows
     x <- stri_replace_all_fixed(x, "\r", "\n") # Old Macintosh
     
-    # name the texts vector
-    if (!is.null(docnames)) {
-        stopifnot(length(docnames) == length(x))
-        names(x) <- docnames
-    } else if (is.null(name)) {
-        names(x) <- paste0(quanteda_options("base_docname"), seq_along(x))
-    } else if (is.null(names(x))) {
-        # if they previously existed, but got obliterated by a stringi function
-        names(x) <- name
-    }
-    
-    # ensure that docnames are unique
-    if (any(duplicated(names(x))))
-        names(x) <- make.unique(names(x))
     
     # create document-meta-data
     if (is.null(metacorpus$source)) {
@@ -191,16 +186,18 @@ corpus.character <- function(x, docnames = NULL,
     
     # create the documents dframe starting with the texts, using an empty field
     # this saves space if it needs to be separated later
-    documents <- data.frame(texts = rep(NA, length(x)),
-                            row.names = names(x),
-                            check.rows = TRUE, stringsAsFactors = FALSE)
+    documents <- data.frame("texts" = rep("", length(x)), 
+                            "_document" = docnames,
+                            "_docid" = seq_along(x),
+                            "_segid" = rep(1, length(x)),
+                            check.names = FALSE,
+                            stringsAsFactors = FALSE)
     
     # user-supplied document-level variables (one kind of meta-data)
     if (!is.null(docvars)) {
-        if (nrow(docvars) > 0) {
-            stopifnot(nrow(docvars)==length(x))
-            documents <- cbind(documents, docvars)
-        }
+        if (nrow(docvars) != length(x))
+            stop(message_error("docvar_mismatch"))
+        documents <- cbind(documents, docvars)
     }
     
     # initialize results corpus
@@ -209,8 +206,8 @@ corpus.character <- function(x, docnames = NULL,
     ## compress and separate texts if compress == TRUE
     # paste delimiters into object to be compressed
     if (compress) {
-        x[1 : (length(x)-1)] <- 
-            paste0(x[1 : (length(x)-1)], quanteda_document_delimiter)
+        x[seq(0, length(x) - 1)] <- paste0(x[seq(length(x) - 1)], 
+                                           quanteda_document_delimiter)
         # remove texts from documents
         documents$texts <- NULL
         temp <- c(temp, list(texts = memCompress(x, "gzip")))
@@ -222,12 +219,10 @@ corpus.character <- function(x, docnames = NULL,
     # build and return the corpus object
     temp <- c(temp, list(documents = documents,
                          metadata = metacorpus,
-                         settings = settings(),
-                         tokens = NULL))
+                         settings = settings()))
     
     ## add some elements if compress
     if (compress) {
-        temp$docnames <- names(x)
         # compute the compression %
         temp$compression_rate <- utils::object.size(temp$texts) / 
             utils::object.size(unname(x)) * 100
@@ -290,21 +285,17 @@ corpus.data.frame <- function(x, docid_field = "doc_id", text_field = "text",
     
     # fix the variable names for missing or NA - for #1388
     # will not affect tibbles since these conditions can never exist for tibbles
-    docvar_logical <- (!(names(x) %in% c(docid_field, text_field)))
-    empty_or_na_docvarnames_logical <- docvar_logical &   
-        (!nzchar(names(x)) | is.na(names(x)))
-    if (any(docvar_logical & empty_or_na_docvarnames_logical)) {
-        docvar_index <- which(docvar_logical)
-        emptyna_index <- which(empty_or_na_docvarnames_logical)
-        names(x)[emptyna_index] <- paste0("V", match(emptyna_index, docvar_index))
-    }
+    is_system <- names(x) %in% c(docid_field, text_field)
+    is_empty <- !is_system & (!nzchar(names(x)) | is.na(names(x)))
+    if (any(is_empty))
+        names(x)[is_empty] <- paste0("V", cumsum(!is_system)[is_empty])
     
     # coerce data.frame variants to data.frame - for #1232
     x <- as.data.frame(x)
     
     # try using row.names if docid_field not already set
     if (docname_source == "default" && 
-        !identical(row.names(x), as.character(seq_len(nrow(x))))) {
+        !identical(row.names(x), as.character(seq(nrow(x))))) {
         docname_source <- "row.names"
     }
     
@@ -317,6 +308,7 @@ corpus.data.frame <- function(x, docid_field = "doc_id", text_field = "text",
     # to make the exclusion below work using match()
     if (docname_source != "docid_field") docid_field <- NULL
     
+    row.names(x) <- NULL
     corpus(x[[text_field]],
            docvars = x[, match(c(text_field, docid_field), names(x)) * -1, 
                        drop = FALSE],
@@ -411,8 +403,7 @@ corpus.Corpus <- function(x, metacorpus = NULL, compress = FALSE, ...) {
             if (any(lengths(texts) > 1))
                 texts <- vapply(texts, paste, character(1), collapse = " ")
             doc_lengths <- 1
-            df <- data.frame(text = texts, stringsAsFactors = FALSE, 
-                             row.names = names_tmCorpus(x))
+            df <- data.frame(text = texts, stringsAsFactors = FALSE)
         }
         
         # document-level metadata
@@ -427,8 +418,7 @@ corpus.Corpus <- function(x, metacorpus = NULL, compress = FALSE, ...) {
         
     } else if (inherits(x, what = "SimpleCorpus")) {
         df <- data.frame(text = as.character(x$content), 
-                         stringsAsFactors = FALSE,
-                         row.names = names(x$content))
+                         stringsAsFactors = FALSE)
         if (length(x$dmeta)) df <- cbind(df, x$dmeta)
     } else {
         stop("Cannot construct a corpus from this tm ", class(x)[1], " object")

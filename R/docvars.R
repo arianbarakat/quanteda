@@ -336,7 +336,7 @@ select_fields <- function(x, types = c('user', 'system')) {
     is_system <- stri_startswith_fixed(names, '_') 
     is_text <- stri_detect_fixed(names, 'texts') | stri_detect_fixed(names, '_texts')
     
-    result <- data.frame(row.names = row.names(x))
+    result <- data.frame(matrix(ncol = 0, nrow = nrow(x)))
     if ('text' %in% types) {
         result <- cbind(result, x[is_text])
     } 

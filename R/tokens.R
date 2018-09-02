@@ -190,9 +190,9 @@ tokens.character <- function(x, ...) {
 tokens.corpus <- function(x, ..., include_docvars = TRUE) {
     result <- tokens_internal(texts(x), ...)
     if (include_docvars) {
-        docvars(result) <- documents(x)[, which(names(documents(x)) != "texts"), drop = FALSE]
+        docvars(result) <- select_fields(x$documents)
     } else {
-        docvars(result) <- data.frame(row.names = docnames(x))
+        docvars(result) <- select_fields(x$documents, "system")
     }
     result
 }
@@ -241,7 +241,8 @@ tokens.tokens <-  function(x, what = c("word", "sentence", "character", "fastest
     if (!identical(ngrams, 1L) || !identical(skip, 0L))
         x <- tokens_ngrams(x, n = ngrams, skip = skip, concatenator = concatenator)
     if (!include_docvars)
-        docvars(x) <- data.frame(row.names = docnames(x))
+        docvars(x) <- select_fields(docvars(x), "system")
+                              
     return(x)
 }
 
@@ -298,7 +299,7 @@ as.tokens.list <- function(x, concatenator = "_", ...) {
                         skip = 0L, 
                         concatenator = concatenator,
                         padding = FALSE)
-    docvars(result) <- data.frame(row.names = docnames(x))
+    docvars(result) <- data.frame(matrix(ncol = 0, nrow = ndoc(x)))
     return(result)
 }
 
@@ -930,7 +931,7 @@ types.tokens <- function(x) {
                   ngrams = sort(unique(c(attr(t1, "ngrams"), attr(t2, "ngrams")))),
                   skip = sort(unique(c(attr(t1, "skip"), attr(t2, "skip")))),
                   concatenator = attr(t1, "concatenator"),
-                  docvars = data.frame(row.names = c(docnames(t1), docnames(t2))))
+                  docvars = data.frame(matrix(ncol = 0, nrow = ndoc(t1) + ndoc(t2))))
     
     docvars(t1) <- docvars(t2) <- NULL
     types2 <- types(t2)

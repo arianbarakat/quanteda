@@ -327,3 +327,27 @@ test_that("can assign docvars when value is a dfm (#1417)", {
         data.frame(and = as.vector(anddfm), row.names = 1:ndoc(mycorp)) # docnames(mycorp))
     )
 })
+
+test_that("docvars never have row names (issue-1422)", {
+    
+    data <- data.frame(text = c("a b c", "B c d", "C d e"),
+                       var = factor(c(1, 1, 2)),
+                       row.names = c("doc1", "doc2", "doc3"), 
+                       stringsAsFactors = FALSE)
+    
+    corp <- corpus(data)
+    toks <- tokens(corp)
+    mt <- dfm(corp, tolower = FALSE)
+    
+    rownames(data) <- NULL
+    data$text <- NULL
+    expect_identical(docvars(corp), data)
+    expect_identical(docvars(toks), data)
+    expect_identical(docvars(mt), data)
+    
+    expect_identical(rownames(docvars(dfm_group(mt, 'var'))),
+                     c("1", "2"))
+    expect_identical(rownames(docvars(dfm_tolower(mt))),
+                    c("1", "2", "3"))
+})
+

@@ -95,12 +95,12 @@ texts <- function(x, groups = NULL, spacer = "  ") {
 #' @noRd
 #' @export
 texts.corpus <- function(x, groups = NULL, spacer = "  ") {
-    txts <- documents(x)$texts
+    txt <- documents(x)$texts
     
     # without groups
     if (is.null(groups)) {
-        names(txts) <- docnames(x)
-        return(txts)
+        names(txt) <- docnames(x)
+        return(txt)
     }
     
     if (is.character(groups) & all(groups %in% names(documents(x)))) {
@@ -111,7 +111,7 @@ texts.corpus <- function(x, groups = NULL, spacer = "  ") {
         group.split <- as.factor(groups)
     }
     
-    texts(txts, groups = group.split, spacer = spacer)
+    texts(txt, groups = group.split, spacer = spacer)
 }
 
 #' @noRd
