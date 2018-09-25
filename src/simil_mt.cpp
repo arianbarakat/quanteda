@@ -55,7 +55,8 @@ double simil_cosine(const arma::sp_mat& col_i, const arma::sp_mat& col_j, double
 double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat& nz, double magni_i, double magni_j) {
     double p = 0;
     for (arma::umat::iterator it = nz.begin(); it != nz.end(); ++it) {
-        p += col_i(*it) * col_j(*it);
+        //p += col_i(*it) * col_j(*it);
+        p += col_i[*it] * col_j[*it];
     }
     return p / (magni_i * magni_j);
 }
@@ -63,7 +64,7 @@ double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat&
 double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma::umat& nz, double magni_i, double magni_j) {
     double p = 0;
     for (arma::umat::iterator it = nz.begin(); it != nz.end(); ++it) {
-        p += col_i(*it) * col_j(*it);
+        p += col_i[*it] * col_j[*it];
     }
     return p / (magni_i * magni_j);
 }
@@ -170,6 +171,7 @@ struct similarity : public Worker {
             arma::umat nz = find_nonzero(mt, i);
             //col_i = arma::mat(mt.col(i));
             col_i = mt.col(i);
+            //col_i = mt[i];
             
             //col_i = col_i(nz);
             //mt_sub = mt.cols(nz);
@@ -182,6 +184,7 @@ struct similarity : public Worker {
                 if (symm && j > i) continue;
                 //col_j = arma::mat(mt.col(j));
                 col_j = mt.col(j);
+                //col_j = mt[j];
                 switch (method){
                     case 1:
                         if (condition) {

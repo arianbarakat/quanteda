@@ -6,6 +6,79 @@
 
 using namespace Rcpp;
 
+// test_arma
+double test_arma(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_arma(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_arma(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// test_arma2
+double test_arma2(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_arma2(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_arma2(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// test_arma3
+void test_arma3(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_arma3(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    test_arma3(x);
+    return R_NilValue;
+END_RCPP
+}
+// test_arma4
+void test_arma4(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_arma4(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    test_arma4(x);
+    return R_NilValue;
+END_RCPP
+}
+// test_arma5
+void test_arma5(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_arma5(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    test_arma5(x);
+    return R_NilValue;
+END_RCPP
+}
+// test_arma10
+void test_arma10(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_arma10(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    test_arma10(x);
+    return R_NilValue;
+END_RCPP
+}
+// test_std
+double test_std(arma::sp_mat x);
+RcppExport SEXP _quanteda_test_std(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_std(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // qatd_cpp_ca
 S4 qatd_cpp_ca(const arma::sp_mat& dfm, const double residual_floor);
 RcppExport SEXP _quanteda_qatd_cpp_ca(SEXP dfmSEXP, SEXP residual_floorSEXP) {
@@ -365,6 +438,13 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_quanteda_test_arma", (DL_FUNC) &_quanteda_test_arma, 1},
+    {"_quanteda_test_arma2", (DL_FUNC) &_quanteda_test_arma2, 1},
+    {"_quanteda_test_arma3", (DL_FUNC) &_quanteda_test_arma3, 1},
+    {"_quanteda_test_arma4", (DL_FUNC) &_quanteda_test_arma4, 1},
+    {"_quanteda_test_arma5", (DL_FUNC) &_quanteda_test_arma5, 1},
+    {"_quanteda_test_arma10", (DL_FUNC) &_quanteda_test_arma10, 1},
+    {"_quanteda_test_std", (DL_FUNC) &_quanteda_test_std, 1},
     {"_quanteda_qatd_cpp_ca", (DL_FUNC) &_quanteda_qatd_cpp_ca, 2},
     {"_quanteda_qatd_cpp_collocations", (DL_FUNC) &_quanteda_qatd_cpp_collocations, 7},
     {"_quanteda_qatd_cpp_manhattan", (DL_FUNC) &_quanteda_qatd_cpp_manhattan, 2},
