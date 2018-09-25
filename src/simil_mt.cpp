@@ -44,18 +44,30 @@ struct magnitude : public Worker {
     }
 };
 
-double simil_cosine(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
+double simil_cosine(const arma::mat& col_i, const arma::mat& col_j, double magni_i, double magni_j) {
     return dot(col_i, col_j) / (magni_i * magni_j);
 }
 
-double simil_cosine(arma::sp_mat& col_i, arma::sp_mat& col_j, double magni_i, double magni_j) {
+double simil_cosine(const arma::sp_mat& col_i, const arma::sp_mat& col_j, double magni_i, double magni_j) {
     return dot(col_i, col_j) / (magni_i * magni_j);
 }
 
-double simil_cosine2(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
-    arma::umat l = find(col_i != 0 && col_j != 0);
-    return dot(col_i(l), col_j(l)) / (magni_i * magni_j);
+double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat& nz, double magni_i, double magni_j) {
+    double p = 0;
+    for (arma::umat::iterator it = nz.begin(); it != nz.end(); ++it) {
+        p += col_i(*it) * col_j(*it);
+    }
+    return p / (magni_i * magni_j);
 }
+
+double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma::umat& nz, double magni_i, double magni_j) {
+    double p = 0;
+    for (arma::umat::iterator it = nz.begin(); it != nz.end(); ++it) {
+        p += col_i(*it) * col_j(*it);
+    }
+    return p / (magni_i * magni_j);
+}
+
 
 double simil_correlation(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
     return as_scalar(cov(col_i, col_j, 1)) / (magni_i * magni_j);
@@ -102,7 +114,20 @@ double dist_canberra(arma::mat& col_i, arma::mat& col_j) {
 }
 
 double dist_minkowski(arma::mat& col_i, arma::mat& col_j, double order = 1) {
-    return(pow(accu(pow(abs(col_i) - abs(col_j), order)), 1 / order));
+    return pow(accu(pow(abs(col_i) - abs(col_j), order)), 1 / order);
+}
+
+arma::umat find_nonzero(const arma::sp_mat& mt, int col) {
+    std::vector<int> i;
+    //std::vector<int> i(mt.n_rows, 0);
+    i.reserve(mt.n_rows);
+    for (arma::sp_mat::const_col_iterator it = mt.begin_col(col); it != mt.end_col(col); ++it) {
+        i.push_back(it.row());
+        //Rcout << it.row() << "\n";
+        //i[it.col()] = 1;
+    }
+    return(arma::ind2sub(arma::size(mt.n_rows, 1), arma::conv_to<arma::uvec>::from(i)));
+    //return arma::conv_to<arma::uvec>::from(i);
 }
 
 struct similarity : public Worker {
@@ -131,27 +156,37 @@ struct similarity : public Worker {
         std::vector<double> simil_temp;
         double simil = 0;
         
-        arma::mat col_i = arma::mat(nrow, 1);
-        arma::mat col_j = arma::mat(nrow, 1);
-        //arma::sp_mat col_i = arma::sp_mat(nrow, 1);
-        //arma::sp_mat col_j = arma::sp_mat(nrow, 1);
+        //arma::mat col_i = arma::mat(nrow, 1);
+        //arma::mat col_j = arma::mat(nrow, 1);
+        //arma::mat mt_sub;
+        arma::sp_mat col_i = arma::sp_mat(nrow, 1);
+        arma::sp_mat col_j = arma::sp_mat(nrow, 1);
+        //arma::umat nz;
         std::size_t i;
         for (std::size_t h = begin; h < end; h++) {
             i = target[h] - 1;
-            col_i = arma::mat(mt.col(i));
+            
+            //arma::umat nz = find(mt.col(i), 0);
+            arma::umat nz = find_nonzero(mt, i);
+            //col_i = arma::mat(mt.col(i));
+            col_i = mt.col(i);
+            
+            //col_i = col_i(nz);
+            //mt_sub = mt.cols(nz);
+            //Rcout << nz << "\n";
             //col_i = mt.col(i);
             //Rcout << col_i << "\n";
             simil_temp.reserve(ncol);
             for (std::size_t j = 0; j < ncol; j++) {
                 //Rcout << "i=" << i << " j=" << j << "\n";
                 if (symm && j > i) continue;
-                col_j = arma::mat(mt.col(j));
-                //col_j = mt.col(j);
+                //col_j = arma::mat(mt.col(j));
+                col_j = mt.col(j);
                 switch (method){
                     case 1:
                         if (condition) {
                             simil = 0;
-                            simil = simil_cosine2(col_i, col_j, magni[i], magni[j]);
+                            simil = simil_cosine2(col_i, col_j, nz, magni[i], magni[j]);
                         } else {
                             //simil = 0;
                             simil = simil_cosine(col_i, col_j, magni[i], magni[j]);
