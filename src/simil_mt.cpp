@@ -11,6 +11,8 @@ double magni_correlation(arma::mat& col) {
     return(as_scalar(stddev(col, 1)));
 }
 
+bool condition;
+
 struct magnitude : public Worker {
     
     const arma::sp_mat& mt; // input
@@ -44,6 +46,15 @@ struct magnitude : public Worker {
 
 double simil_cosine(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
     return dot(col_i, col_j) / (magni_i * magni_j);
+}
+
+double simil_cosine(arma::sp_mat& col_i, arma::sp_mat& col_j, double magni_i, double magni_j) {
+    return dot(col_i, col_j) / (magni_i * magni_j);
+}
+
+double simil_cosine2(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
+    arma::umat l = find(col_i != 0 && col_j != 0);
+    return dot(col_i(l), col_j(l)) / (magni_i * magni_j);
 }
 
 double simil_correlation(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
@@ -122,34 +133,44 @@ struct similarity : public Worker {
         
         arma::mat col_i = arma::mat(nrow, 1);
         arma::mat col_j = arma::mat(nrow, 1);
+        //arma::sp_mat col_i = arma::sp_mat(nrow, 1);
+        //arma::sp_mat col_j = arma::sp_mat(nrow, 1);
         std::size_t i;
         for (std::size_t h = begin; h < end; h++) {
             i = target[h] - 1;
             col_i = arma::mat(mt.col(i));
+            //col_i = mt.col(i);
             //Rcout << col_i << "\n";
             simil_temp.reserve(ncol);
             for (std::size_t j = 0; j < ncol; j++) {
                 //Rcout << "i=" << i << " j=" << j << "\n";
                 if (symm && j > i) continue;
                 col_j = arma::mat(mt.col(j));
+                //col_j = mt.col(j);
                 switch (method){
                     case 1:
-                        simil = simil_cosine(col_i, col_j, magni[i], magni[j]);
+                        if (condition) {
+                            simil = 0;
+                            simil = simil_cosine2(col_i, col_j, magni[i], magni[j]);
+                        } else {
+                            //simil = 0;
+                            simil = simil_cosine(col_i, col_j, magni[i], magni[j]);
+                        }
                         break;
                     case 2:
-                        simil = simil_correlation(col_i, col_j, magni[i], magni[j]);
+                        //simil = simil_correlation(col_i, col_j, magni[i], magni[j]);
                         break;
                     case 3:
-                        simil = simil_ejaccard(col_i, col_j, weight);
+                        //simil = simil_ejaccard(col_i, col_j, weight);
                         break;
                     case 4:
-                        simil = simil_edice(col_i, col_j, weight);
+                        //simil = simil_edice(col_i, col_j, weight);
                         break;
                     case 5:
-                        simil = simil_hamann(col_i, col_j, weight);
+                        //simil = simil_hamann(col_i, col_j, weight);
                         break;
                     case 6:
-                        simil = simil_faith(col_i, col_j);
+                        //simil = simil_faith(col_i, col_j);
                         break;
                     default:
                         simil = 0;
@@ -184,8 +205,10 @@ S4 qatd_cpp_similarity(const arma::sp_mat& mt,
                        const IntegerVector target_,
                        unsigned int rank,
                        double limit = -1.0,
-                       const double weight = 1.0) {
+                       const double weight = 1.0,
+                       bool condition_ = false) {
     
+    condition = condition_;
     arma::uword ncol = mt.n_cols;
     arma::uword nrow = mt.n_rows;
     std::vector<unsigned int> target = as< std::vector<unsigned int> >(target_);

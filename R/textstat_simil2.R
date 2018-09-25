@@ -70,7 +70,7 @@ textstat_simil2.default <- function(x, selection = NULL,
 #' @export    
 textstat_simil2.dfm <- function(x, selection = NULL,
                                 margin = c("documents", "features"),
-                                method = c("cosine", "correlation", "jaccard", "ejaccard",
+                                method = c("cosine", "cosine2", "correlation", "jaccard", "ejaccard",
                                            "dice", "edice", "hamann", "simple matching", "faith"), 
                                 rank = NULL,
                                 min_simil = NULL, condition = FALSE) {
@@ -123,7 +123,7 @@ textstat_simil2.dfm <- function(x, selection = NULL,
 
     id_method <- match(method, c("cosine", "correlation", "ejaccard", "edice", "hamann", "faith"))
     result <- qatd_cpp_similarity(x, id_method, 
-                                  i, rank, min_simil, weight)
+                                  i, rank, min_simil, weight, condition)
 
     label <- colnames(x)
     rownames(result) <- label
