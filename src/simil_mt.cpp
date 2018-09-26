@@ -12,6 +12,7 @@ double magni_correlation(arma::mat& col) {
 }
 
 bool condition;
+arma::uvec nz2;
 
 struct magnitude : public Worker {
     
@@ -44,15 +45,18 @@ struct magnitude : public Worker {
     }
 };
 
-double simil_cosine(const arma::mat& col_i, const arma::mat& col_j, double magni_i, double magni_j) {
+double simil_cosine(const arma::mat& col_i, const arma::mat& col_j, 
+                    const double& magni_i, const double& magni_j) {
     return dot(col_i, col_j) / (magni_i * magni_j);
 }
 
-double simil_cosine(const arma::sp_mat& col_i, const arma::sp_mat& col_j, double magni_i, double magni_j) {
+double simil_cosine(const arma::sp_mat& col_i, const arma::sp_mat& col_j, 
+                    const double& magni_i, const double& magni_j) {
     return dot(col_i, col_j) / (magni_i * magni_j);
 }
 
-double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat& nz, double magni_i, double magni_j) {
+double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat& nz, 
+                     double& magni_i, double& magni_j) {
     double p = 0;
     for (arma::umat::iterator it = nz.begin(); it != nz.end(); ++it) {
         //p += col_i(*it) * col_j(*it);
@@ -61,7 +65,8 @@ double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat&
     return p / (magni_i * magni_j);
 }
 
-double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma::uvec& nz, double magni_i, double magni_j) {
+double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma::uvec& nz, 
+                     const double& magni_i, const double& magni_j) {
     double p = 0;
     for (arma::uvec::iterator it = nz.begin(); it != nz.end(); ++it) {
         p += col_i[*it] * col_j[*it];
@@ -69,7 +74,8 @@ double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma:
     return p / (magni_i * magni_j);
 }
 
-double simil_cosine2(const arma::colvec& col_i, const arma::colvec& col_j, arma::uvec& nz, double magni_i, double magni_j) {
+double simil_cosine(const arma::colvec& col_i, const arma::colvec& col_j, arma::uvec& nz, 
+                    const double& magni_i, const double& magni_j) {
     double p = 0;
     for (arma::uvec::iterator it = nz.begin(); it != nz.end(); ++it) {
         p += col_i[*it] * col_j[*it];
@@ -77,7 +83,52 @@ double simil_cosine2(const arma::colvec& col_i, const arma::colvec& col_j, arma:
     return p / (magni_i * magni_j);
 }
 
+double simil_cosine2(const arma::colvec& col_i, const arma::colvec& col_j, arma::uvec& nz, 
+                     const double& magni_i, const double& magni_j) {
+    
+    nz = intersect(nz, nz2);
+    double p = 0;
+    for (arma::uvec::iterator it = nz.begin(); it != nz.end(); ++it) {
+        p += col_i[*it] * col_j[*it];
+    }
+    return p / (magni_i * magni_j);
+}
 
+double simil_cosine3(const arma::colvec& col_i, const arma::colvec& col_j, arma::uvec& nz, 
+                     const double& magni_i, const double& magni_j) {
+    return dot(col_i(nz), col_j(nz)) / (magni_i * magni_j);
+}
+
+
+double simil_cosine3(arma::sp_mat::const_col_iterator it_i,
+                     arma::sp_mat::const_col_iterator& it_j,
+                     const arma::sp_mat::const_col_iterator it_i_end,
+                     const arma::sp_mat::const_col_iterator& it_j_end,
+                     const double& magni_i, const double& magni_j) {
+    double p = 0;
+    while (true) {
+        if (it_i == it_i_end || it_j == it_j_end) break;
+        //Rcout << "i=" << it_i.row() << " j=" << it_j.row() << "\n";
+        if (it_i.row() == it_j.row()) {
+            p += (*it_i) * (*it_j);
+            ++it_j;
+            ++it_i;
+        } else if (it_i.row() > it_j.row()) {
+            ++it_j;
+        } else if (it_i.row() < it_j.row()) {
+            ++it_i;
+        }
+    }
+    return p / (magni_i * magni_j);
+}
+
+double simil_cosine4(const arma::colvec& col_i, const arma::colvec& col_j, arma::uvec& nz, double magni_i, double magni_j) {
+    double p = 0;
+    for (arma::uvec::iterator it = nz.begin(); it != nz.end(); ++it) {
+        p += col_i[*it] * col_j[*it];
+    }
+    return p / (magni_i * magni_j);
+}
 
 double simil_correlation(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
     return as_scalar(cov(col_i, col_j, 1)) / (magni_i * magni_j);
@@ -175,19 +226,27 @@ struct similarity : public Worker {
         arma::colvec col_i(nrow);
         arma::colvec col_j(nrow);
         
+        arma::sp_mat::const_col_iterator it_i;
+        arma::sp_mat::const_col_iterator it_i_end;
+        //arma::sp_mat::const_col_iterator it_i_temp;
+        //arma::sp_mat::const_col_iterator it_i_end_temp;
+        arma::sp_mat::const_col_iterator it_j;
+        arma::sp_mat::const_col_iterator it_j_end;
+        arma::uvec nz;
+        
         //arma::umat nz;
         std::size_t i;
         for (std::size_t h = begin; h < end; h++) {
             i = target[h] - 1;
             
             //arma::umat nz = find(mt.col(i), 0);
-            arma::uvec nz = find_nonzero(mt, i);
-            //col_i = arma::mat(mt.col(i));
-            col_i = mt.col(i);
-            //col_i = mt[i];
-            
-            //col_i = col_i(nz);
-            //mt_sub = mt.cols(nz);
+            if (condition) {
+                it_i = mt.begin_col(i);
+                it_i_end = mt.end_col(i);
+            } else {
+                nz = find_nonzero(mt, i);
+                col_i = mt.col(i);
+            }
             //Rcout << nz << "\n";
             //col_i = mt.col(i);
             //Rcout << col_i << "\n";
@@ -195,17 +254,22 @@ struct similarity : public Worker {
             for (std::size_t j = 0; j < ncol; j++) {
                 //Rcout << "i=" << i << " j=" << j << "\n";
                 if (symm && j > i) continue;
-                //col_j = arma::mat(mt.col(j));
-                col_j = mt.col(j);
-                //col_j = mt[j];
+                if (condition) {
+                    //it_i_temp = std::copy(it_i);
+                    //it_i_temp = std::copy(it_i_end);
+                    it_j = mt.begin_col(j);
+                    it_j_end = mt.end_col(j);
+                } else {
+                    col_j = mt.col(j);
+                }
                 switch (method){
                     case 1:
+                        //simil = 0;
                         if (condition) {
-                            //simil = 0;
-                            simil = simil_cosine2(col_i, col_j, nz, magni[i], magni[j]);
+                            simil = simil_cosine3(it_i, it_j, it_i_end, it_j_end, magni[i], magni[j]);
                         } else {
-                            simil = 0;
-                            simil = simil_cosine2(col_i, col_j, nz, magni[i], magni[j]);
+                            //simil = 0;
+                            simil = simil_cosine4(col_i, col_j, nz, magni[i], magni[j]);
                             //simil = simil_cosine(col_i, col_j, magni[i], magni[j]);
                         }
                         break;
@@ -261,6 +325,8 @@ S4 qatd_cpp_similarity(const arma::sp_mat& mt,
                        bool condition_ = false) {
     
     condition = condition_;
+    nz2 << 2 << 30 << 60 << 800;
+    
     arma::uword ncol = mt.n_cols;
     arma::uword nrow = mt.n_rows;
     std::vector<unsigned int> target = as< std::vector<unsigned int> >(target_);
