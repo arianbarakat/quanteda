@@ -61,13 +61,22 @@ double simil_cosine2(const arma::mat& col_i, const arma::mat& col_j, arma::umat&
     return p / (magni_i * magni_j);
 }
 
-double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma::umat& nz, double magni_i, double magni_j) {
+double simil_cosine2(const arma::sp_mat& col_i, const arma::sp_mat& col_j, arma::uvec& nz, double magni_i, double magni_j) {
     double p = 0;
-    for (arma::umat::iterator it = nz.begin(); it != nz.end(); ++it) {
+    for (arma::uvec::iterator it = nz.begin(); it != nz.end(); ++it) {
         p += col_i[*it] * col_j[*it];
     }
     return p / (magni_i * magni_j);
 }
+
+double simil_cosine2(const arma::colvec& col_i, const arma::colvec& col_j, arma::uvec& nz, double magni_i, double magni_j) {
+    double p = 0;
+    for (arma::uvec::iterator it = nz.begin(); it != nz.end(); ++it) {
+        p += col_i[*it] * col_j[*it];
+    }
+    return p / (magni_i * magni_j);
+}
+
 
 
 double simil_correlation(arma::mat& col_i, arma::mat& col_j, double magni_i, double magni_j) {
@@ -118,7 +127,7 @@ double dist_minkowski(arma::mat& col_i, arma::mat& col_j, double order = 1) {
     return pow(accu(pow(abs(col_i) - abs(col_j), order)), 1 / order);
 }
 
-arma::umat find_nonzero(const arma::sp_mat& mt, int col) {
+arma::uvec find_nonzero(const arma::sp_mat& mt, int col) {
     std::vector<int> i;
     //std::vector<int> i(mt.n_rows, 0);
     i.reserve(mt.n_rows);
@@ -127,7 +136,8 @@ arma::umat find_nonzero(const arma::sp_mat& mt, int col) {
         //Rcout << it.row() << "\n";
         //i[it.col()] = 1;
     }
-    return(arma::ind2sub(arma::size(mt.n_rows, 1), arma::conv_to<arma::uvec>::from(i)));
+    //return(arma::ind2sub(arma::size(mt.n_rows, 1), arma::conv_to<arma::uvec>::from(i)));
+    return(arma::conv_to<arma::uvec>::from(i));
     //return arma::conv_to<arma::uvec>::from(i);
 }
 
@@ -160,15 +170,18 @@ struct similarity : public Worker {
         //arma::mat col_i = arma::mat(nrow, 1);
         //arma::mat col_j = arma::mat(nrow, 1);
         //arma::mat mt_sub;
-        arma::sp_mat col_i = arma::sp_mat(nrow, 1);
-        arma::sp_mat col_j = arma::sp_mat(nrow, 1);
+        //arma::sp_mat col_i = arma::sp_mat(nrow, 1);
+        //arma::sp_mat col_j = arma::sp_mat(nrow, 1);
+        arma::colvec col_i(nrow);
+        arma::colvec col_j(nrow);
+        
         //arma::umat nz;
         std::size_t i;
         for (std::size_t h = begin; h < end; h++) {
             i = target[h] - 1;
             
             //arma::umat nz = find(mt.col(i), 0);
-            arma::umat nz = find_nonzero(mt, i);
+            arma::uvec nz = find_nonzero(mt, i);
             //col_i = arma::mat(mt.col(i));
             col_i = mt.col(i);
             //col_i = mt[i];
@@ -188,11 +201,12 @@ struct similarity : public Worker {
                 switch (method){
                     case 1:
                         if (condition) {
-                            simil = 0;
+                            //simil = 0;
                             simil = simil_cosine2(col_i, col_j, nz, magni[i], magni[j]);
                         } else {
-                            //simil = 0;
-                            simil = simil_cosine(col_i, col_j, magni[i], magni[j]);
+                            simil = 0;
+                            simil = simil_cosine2(col_i, col_j, nz, magni[i], magni[j]);
+                            //simil = simil_cosine(col_i, col_j, magni[i], magni[j]);
                         }
                         break;
                     case 2:
@@ -254,7 +268,7 @@ S4 qatd_cpp_similarity(const arma::sp_mat& mt,
     bool symm = target.size() == ncol && rank == nrow;
     
     //dev::Timer timer;
-    //dev::start_timer("Compute", timer);
+    //dev::start_timer("Compute magnitude", timer);
     
     // compute magnitued for all columns
     DoubleParams mangi(ncol);
@@ -262,14 +276,16 @@ S4 qatd_cpp_similarity(const arma::sp_mat& mt,
         magnitude magnitude(mt, mangi, method);
         parallelFor(0, ncol, magnitude);
     }
+    //dev::stop_timer("Compute magnitude", timer);
     
+    //dev::start_timer("Compute similarity", timer);
     // compute similarity for each pair
     Triplets simil_tri;
     //if (limit == -1.0)
     //    simil_tri.reserve(ncol * target.size() * 0.5);
     similarity similarity(mt, simil_tri, mangi, method, target, rank, limit, symm, weight);
     parallelFor(0, target.size(), similarity);
-    //dev::stop_timer("Compute", timer);
+    //dev::stop_timer("Compute similarity", timer);
     
     //dev::start_timer("Convert", timer);
     std::size_t simil_size = simil_tri.size();
