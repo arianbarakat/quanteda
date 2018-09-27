@@ -59,6 +59,32 @@ void test_arma10(arma::sp_mat x) {
     //Rcout << x.col(1) << "\n";
 }
 
+// [[Rcpp::export]]
+void test_arma11(arma::sp_mat x, int col) {
+    double t = 0;
+    for (arma::sp_mat::const_col_iterator it = x.begin_col(col); it != x.end_col(col); ++it) {
+        t += 1;
+    }
+}
+
+
+// [[Rcpp::export]]
+void test_arma12(arma::sp_mat x, int row) {
+    double t = 0;
+    for (arma::sp_mat::const_row_iterator it = x.begin_row(row); it != x.end_row(row); ++it) {
+        t += 1;
+    }
+}
+
+// [[Rcpp::export]]
+void test_arma13(arma::sp_mat x, int row) {
+    double t = 0;
+    x = x.t();
+    for (arma::sp_mat::const_col_iterator it = x.begin_col(row); it != x.end_col(row); ++it) {
+        t += 1;
+    }
+}
+
 
 // [[Rcpp::export]]
 double test_std(arma::sp_mat x) {
@@ -77,7 +103,8 @@ double test_std(arma::sp_mat x) {
 //
 
 /*** R
-mt = abs(Matrix::rsparsematrix(10000, 1000, density=0.02))
+require(Matrix)
+mt = abs(rsparsematrix(10000, 1000, density=0.02))
 # microbenchmark::microbenchmark(
 #     test_std(mt),
 #     test_arma(mt),
@@ -88,7 +115,11 @@ mt = abs(Matrix::rsparsematrix(10000, 1000, density=0.02))
 #     test_arma4(mt),
 #     test_arma5(mt)
 # )
-
-test_arma10(mt)
+mt_t <- t(mt)
+microbenchmark::microbenchmark(
+    test_arma11(mt, 100),
+    test_arma12(mt_t, 100),
+    test_arma1(mt_t, 100)
+)
 
 */
